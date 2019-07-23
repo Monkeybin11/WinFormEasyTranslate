@@ -46,6 +46,7 @@
             // grdData
             // 
             this.grdData.AllowEditing = true;
+            this.grdData.AllowSorting = C1.Win.C1FlexGrid.AllowSortingEnum.SingleColumn;
             this.grdData.ColumnInfo = resources.GetString("grdData.ColumnInfo");
             this.grdData.Location = new System.Drawing.Point(0, 83);
             this.grdData.Rows.Count = 1;

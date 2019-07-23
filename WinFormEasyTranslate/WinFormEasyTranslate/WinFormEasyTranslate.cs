@@ -156,16 +156,7 @@ namespace WinFormEasyTranslate
                     }
 
                     string file_name = GetFileNameByClassNameAndLanguage(Convert.ToString(currentRow["class_name"]), language);
-                    string file_path = null;
-
-                    if (Convert.ToString(currentRow["class_name"]) == "Resources")
-                    {
-                        file_path = string.Format(workpath + @"\Properties\{0}", file_name);
-                    }
-                    else
-                    {
-                        file_path = string.Format(workpath + @"\{0}", file_name);
-                    }
+                    string file_path = file_path = fileNames.Where(r => r.Name == file_name).First().FullName;
 
                     if (!File.Exists(file_path))
                     {
@@ -345,6 +336,14 @@ namespace WinFormEasyTranslate
                     return false;
                 }
 
+                fileNames = new DirectoryInfo(workpath).GetFiles("*.resx", SearchOption.AllDirectories).ToList();
+
+                if(!fileNames.Where(r => r.Name.Contains(".en") || r.Name.Contains(".zh-CHT")).Any())
+                {
+                    MessageBox.Show(this, "多言語構成を生成するため、Virtual Studioでプロジェクトに多言語を指定して、\r\n二つ言語ファイルを先に生成してください。", "事前ワークチェック", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return false;
+                }
+
                 return true;
             }
             catch (Exception)
@@ -394,7 +393,7 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                fileNames = new DirectoryInfo(workpath).GetFiles("*.resx", SearchOption.AllDirectories).ToList();
+
 
                 List<ResourceDto> allWords = new List<ResourceDto>();
 
@@ -402,11 +401,11 @@ namespace WinFormEasyTranslate
                 {
                     if(filename.Name.Contains("Resources"))
                     {
-                        allWords.AddRange(GetResource(filename.Name));
+                        allWords.AddRange(GetResource(filename));
                     }
                     else
                     {
-                        allWords.AddRange(GetFormResource(filename.Name));
+                        allWords.AddRange(GetFormResource(filename));
                     }
                 }
 
@@ -479,16 +478,16 @@ namespace WinFormEasyTranslate
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public List<ResourceDto> GetResource(string filename)
+        public List<ResourceDto> GetResource(FileInfo fileinfo)
         {
             try
             {
                 List<ResourceDto> wordDtos = new List<ResourceDto>();
 
-                string from_filepath = string.Format(@"{0}\Properties\{1}", workpath, filename);
+                string from_filepath = fileinfo.FullName;
 
                 List<ResXEntry> WordInfos = ResXFile.ReadResource(from_filepath, ResXFile.Option.None);
-                string language = GetLanguageByFileName(filename);
+                string language = GetLanguageByFileName(fileinfo.Name);
 
                 foreach (var word in WordInfos)
                 {
@@ -497,7 +496,7 @@ namespace WinFormEasyTranslate
                         {
                             language = language,
                             file_name = from_filepath,
-                            class_name = GetClassNameByFileName(filename),
+                            class_name = GetClassNameByFileName(fileinfo.Name),
                             resource_key = word.Id,
                             value = word.Value,
                             is_grid_info = word.IsGridInfo,
@@ -518,18 +517,18 @@ namespace WinFormEasyTranslate
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public List<ResourceDto> GetFormResource(string filename)
+        public List<ResourceDto> GetFormResource(FileInfo fileinfo)
         {
             try
             {
                 List<ResourceDto> wordDtos = new List<ResourceDto>();
 
-                string from_filepath = string.Format(@"{0}\{1}", workpath, filename);
+                string from_filepath = fileinfo.FullName;
 
                 List<ResXEntry> WordInfos = ResXFile.ReadFormResource(from_filepath, ResXFile.Option.None);
 
-                string class_name = GetClassNameByFileName(filename);
-                string language = GetLanguageByFileName(filename);
+                string class_name = GetClassNameByFileName(fileinfo.Name);
+                string language = GetLanguageByFileName(fileinfo.Name);
 
                 foreach (var word in WordInfos)
                 {
