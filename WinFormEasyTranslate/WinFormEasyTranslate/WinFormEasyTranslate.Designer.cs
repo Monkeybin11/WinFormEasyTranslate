@@ -151,6 +151,7 @@
             this.cmdJpTranslate.Tag = "jp";
             this.cmdJpTranslate.Text = "日本語化";
             this.cmdJpTranslate.UseVisualStyleBackColor = false;
+            this.cmdJpTranslate.Visible = false;
             // 
             // cmdImport
             // 

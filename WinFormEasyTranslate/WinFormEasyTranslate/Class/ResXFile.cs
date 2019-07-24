@@ -44,74 +44,96 @@ namespace WinFormEasyTranslate
         {
             var result = new List<ResXEntry>();
 
-            using (var resx = new ResXResourceReader(filename))
+            var listNodes = GetResourceNodes(filename, options);
+
+            if (listNodes.Count() == 0) return result;
+
+            var fc = new FontConverter();
+
+            //全てのワードを取得する
+            var dict = listNodes.GetEnumerator();
+
+            while (dict.MoveNext())
             {
-                FileInfo inputfile = new FileInfo(filename);
-                if (inputfile.Length == 0) return result;
+                var node = dict.Current;
 
-                resx.UseResXDataNodes = true;
-                var dict = resx.GetEnumerator();
-                while (dict.MoveNext())
+                string valuetypename = node.GetValueTypeName((ITypeResolutionService)null);
+
+                if (valuetypename.Contains("System.Windows.Forms.Label") ||
+                    valuetypename.Contains("System.String") ||
+                    valuetypename.Contains("System.Drawing.Font"))
                 {
-                    var node = dict.Value as ResXDataNode;
-
-                    string valuetypename = node.GetValueTypeName((ITypeResolutionService)null);
-
-                    if (valuetypename.Contains("System.Windows.Forms.Label") ||
-                        valuetypename.Contains("System.String") ||
-                        valuetypename.Contains("System.Drawing.Font"))
+                    if (node.Name.EndsWith(".Text") ||
+                       node.Name.EndsWith(".Font") ||
+                       node.Name.EndsWith(".StyleInfo") ||
+                       node.Name.EndsWith(".ColumnInfo"))
                     {
-                        if (node.Name.EndsWith(".Text") ||
-                           node.Name.EndsWith(".Font") ||
-                           node.Name.EndsWith(".ColumnInfo"))
-                        {
-                            string nodevalue = null;
+                        string nodevalue = null;
 
-                            if (node.Name.EndsWith(".Font"))
+                        if (node.Name.EndsWith(".Font"))
+                        {
+                            Font fontValue = node.GetValue((ITypeResolutionService)null) as Font;
+                            fc = new FontConverter();
+                            nodevalue = fc.ConvertToInvariantString(fontValue);
+
+                            result.Add(
+                                new ResXEntry()
+                                {
+                                    Id = node.Name as string,
+                                    Value = nodevalue,
+                                });
+                        }
+                        else if (node.Name.EndsWith(".ColumnInfo"))
+                        {
+                            nodevalue = node.GetValue((ITypeResolutionService)null) as string;
+                            string grdControlName = node.Name.Split('.').ToList().First();
+                            C1FlexGrid grdData = GetDummyGrid(listNodes, grdControlName);
+
+                            foreach (Column colInfo in grdData.Cols)
                             {
-                                Font fontValue = node.GetValue((ITypeResolutionService)null) as Font;
-                                var fc = new FontConverter();
-                                nodevalue = fc.ConvertToInvariantString(fontValue);
+                                result.Add(
+                                    new ResXEntry()
+                                    {
+                                        Id = string.Format("{0}.Columns[{1}].Caption", grdControlName, colInfo.Index),
+                                        Value = colInfo.Caption,
+                                        IsGridInfo = true,
+                                    });
 
                                 result.Add(
                                     new ResXEntry()
                                     {
-                                        Id = dict.Key as string,
-                                        Value = nodevalue,
+                                        Id = string.Format("{0}.Columns[{1}].Font", grdControlName, colInfo.Index),
+                                        Value = colInfo.Style == null ? fc.ConvertToInvariantString(grdData.Styles.Normal.Font) : fc.ConvertToInvariantString(colInfo.Style.Font),
+                                        IsGridInfo = true,
                                     });
                             }
-                            else if (node.Name.EndsWith(".ColumnInfo"))
-                            {
-                                nodevalue = node.GetValue((ITypeResolutionService)null) as string;
-                                C1FlexGrid grdData = new C1FlexGrid();
-                                grdData.ColumnInfo = nodevalue;
-                                string grdControlName = node.Name.Split('.').ToList().First();
+                        }
+                        else if (node.Name.EndsWith(".StyleInfo"))
+                        {
+                            nodevalue = node.GetValue((ITypeResolutionService)null) as string;
+                            string grdControlName = node.Name.Split('.').ToList().First();
+                            C1FlexGrid grdData = GetDummyGrid(listNodes, grdControlName);
 
-                                foreach (Column colInfo in grdData.Cols)
-                                {
-                                    result.Add(
-                                        new ResXEntry()
-                                        {
-                                            Id = string.Format("{0}.{1}", grdControlName, colInfo.Name),
-                                            Value = colInfo.Caption,
-                                            IsGridInfo = true,
-                                        });
-                                }
-                            }
-                            else
+                            foreach (CellStyle styleInfo in grdData.Styles)
                             {
-                                nodevalue = node.GetValue((ITypeResolutionService)null) as string;
                                 result.Add(
-                                new ResXEntry()
-                                {
-                                    Id = dict.Key as string,
-                                    Value = nodevalue,
-                                });
+                                    new ResXEntry()
+                                    {
+                                        Id = string.Format("{0}.Styles.{1}.Font", grdControlName, styleInfo.Name),
+                                        Value = fc.ConvertToInvariantString(styleInfo.Font),
+                                        IsGridInfo = true,
+                                    });
                             }
                         }
                         else
                         {
-                            continue;
+                            nodevalue = node.GetValue((ITypeResolutionService)null) as string;
+                            result.Add(
+                            new ResXEntry()
+                            {
+                                Id = node.Name as string,
+                                Value = nodevalue,
+                            });
                         }
                     }
                     else
@@ -119,11 +141,71 @@ namespace WinFormEasyTranslate
                         continue;
                     }
                 }
+                else
+                {
+                    continue;
+                }
+            }
+
+            return result;
+        }
+
+        public static List<ResXDataNode> GetResourceNodes(string filename, Option options = Option.None)
+        {
+            var result = new List<ResXDataNode>();
+
+            using (var resx = new ResXResourceReader(filename))
+            {
+                FileInfo inputfile = new FileInfo(filename);
+                if (inputfile.Length == 0) return result;
+
+                resx.UseResXDataNodes = true;
+
+                //全てのワードを取得する
+                var dict = resx.GetEnumerator();
+                while (dict.MoveNext())
+                {
+                    var node = dict.Value as ResXDataNode;
+
+                    result.Add(node);
+                }
 
                 resx.Close();
             }
 
             return result;
+        }
+
+        public static C1FlexGrid GetDummyGrid(List<ResXDataNode> nodes, string grdControlName)
+        {
+            C1FlexGrid grdData = null;
+            if(nodes.Where(r => r.Name == grdControlName + ".ColumnInfo" ||
+                                r.Name == grdControlName + ".StyleInfo" ||
+                                r.Name == grdControlName + ".Font").Any())
+            {
+                grdData = new C1FlexGrid();
+
+                var fontWord = nodes.Where(r => r.Name == grdControlName + ".Font").FirstOrDefault();
+                if (fontWord != null)
+                {
+                    Font fontValue = fontWord.GetValue((ITypeResolutionService)null) as Font;
+                    grdData.Font = fontValue;
+                }
+
+                var columninfoWord = nodes.Where(r => r.Name == grdControlName + ".ColumnInfo").FirstOrDefault();
+                if(columninfoWord != null)
+                {
+                    grdData.ColumnInfo = columninfoWord.GetValue((ITypeResolutionService)null) as string;
+                }
+
+                var styleinfoWord = nodes.Where(r => r.Name == grdControlName + ".StyleInfo").FirstOrDefault();
+                if (styleinfoWord != null)
+                {
+                    grdData.StyleInfo = styleinfoWord.GetValue((ITypeResolutionService)null) as string;
+                }
+            }
+
+            return grdData;
         }
 
         /// <summary>
@@ -264,63 +346,138 @@ namespace WinFormEasyTranslate
         /// <param name="node"></param>
         public static void WriteGridInfo(string filename, ResXEntry node)
         {
-            string to_write = string.Format("{0}.ColumnInfo",node.Id.Split('.').First());
-            var resourceEntries = new Hashtable();
-
-            FileInfo inputfile = new FileInfo(filename);
-            var reader = new ResXResourceReader(filename);
-            if (inputfile.Length != 0)
+            if (node.Id.Contains(".Columns"))
             {
-                foreach (DictionaryEntry d in reader)
+                string to_write = string.Format("{0}.ColumnInfo", node.Id.Split('.').First());
+                var resourceEntries = new Hashtable();
+
+                FileInfo inputfile = new FileInfo(filename);
+                var reader = new ResXResourceReader(filename);
+                if (inputfile.Length != 0)
                 {
-                    resourceEntries.Add(d.Key.ToString(), d.Value);
-                }
-            }
-
-            reader.Close();
-
-            C1FlexGrid grdData = new C1FlexGrid();
-            if (resourceEntries.ContainsKey(to_write))
-            {
-                grdData.ColumnInfo = Convert.ToString(resourceEntries[to_write]);
-                grdData.Cols[node.Id.Split('.').ToList().Last()].Caption = node.Value;
-                resourceEntries[to_write] = grdData.ColumnInfo;
-            }
-            else
-            {
-                FileInfo f = new FileInfo(filename);
-                string default_filename = f.DirectoryName + @"\" + f.Name.Split('.').ToList().First() + "." + f.Name.Split('.').ToList().Last();
-                var reader_default = new ResXResourceReader(default_filename);
-                foreach (DictionaryEntry item in reader_default)
-                {
-                    if (item.Key.ToString() == to_write)
+                    foreach (DictionaryEntry d in reader)
                     {
-                        grdData.ColumnInfo = item.Value.ToString();
-                        resourceEntries.Add(item.Key.ToString(), grdData.ColumnInfo);
-                        grdData.Cols[node.Id.Split('.').ToList().Last()].Caption = node.Value;
-                        resourceEntries[to_write] = grdData.ColumnInfo;
-                        break;
+                        resourceEntries.Add(d.Key.ToString(), d.Value);
                     }
                 }
-            }
 
-            var resourceWriter = new ResXResourceWriter(filename);
-            foreach (String key in resourceEntries.Keys)
-            {
-                if (key.EndsWith(".Font"))
+                reader.Close();
+
+                C1FlexGrid grdData = new C1FlexGrid();
+                var fc = new FontConverter();
+                if (resourceEntries.ContainsKey(to_write))
                 {
-                    var fc = new FontConverter();
-                    Font f = resourceEntries[key] as Font;
-                    resourceWriter.AddResource(key, f);
+                    grdData.ColumnInfo = Convert.ToString(resourceEntries[to_write]);
+                    int colIndex = Convert.ToInt32(node.Id.Split('.').ToList()[1].Replace("Columns", "").Replace("[", "").Replace("]", ""));
+                    if (node.Id.EndsWith(".Caption"))
+                        grdData.Cols[colIndex].Caption = node.Value;
+                    else if (node.Id.EndsWith(".Font"))
+                        grdData.Cols[colIndex].Style.Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                    resourceEntries[to_write] = grdData.ColumnInfo;
                 }
                 else
                 {
-                    resourceWriter.AddResource(key, resourceEntries[key]);
+                    FileInfo f = new FileInfo(filename);
+                    string default_filename = f.DirectoryName + @"\" + f.Name.Split('.').ToList().First() + "." + f.Name.Split('.').ToList().Last();
+                    var reader_default = new ResXResourceReader(default_filename);
+                    foreach (DictionaryEntry item in reader_default)
+                    {
+                        if (item.Key.ToString() == to_write)
+                        {
+                            grdData.ColumnInfo = item.Value.ToString();
+                            resourceEntries.Add(item.Key.ToString(), grdData.ColumnInfo);
+                            int colIndex = Convert.ToInt32(node.Id.Split('.').ToList()[1].Replace("Columns", "").Replace("[", "").Replace("]", ""));
+                            if (node.Id.EndsWith(".Caption"))
+                                grdData.Cols[colIndex].Caption = node.Value;
+                            else if (node.Id.EndsWith(".Font"))
+                                grdData.Cols[colIndex].Style.Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                            resourceEntries[to_write] = grdData.ColumnInfo;
+                            break;
+                        }
+                    }
                 }
-            }
 
-            resourceWriter.Generate();
-            resourceWriter.Close();
+                var resourceWriter = new ResXResourceWriter(filename);
+                foreach (String key in resourceEntries.Keys)
+                {
+                    if (key.EndsWith(".Font"))
+                    {
+                        fc = new FontConverter();
+                        Font f = resourceEntries[key] as Font;
+                        resourceWriter.AddResource(key, f);
+                    }
+                    else
+                    {
+                        resourceWriter.AddResource(key, resourceEntries[key]);
+                    }
+                }
+
+                resourceWriter.Generate();
+                resourceWriter.Close();
+            }
+            else if(node.Id.Contains(".Styles"))
+            {
+                string to_write = string.Format("{0}.StyleInfo", node.Id.Split('.').First());
+                var resourceEntries = new Hashtable();
+
+                FileInfo inputfile = new FileInfo(filename);
+                var reader = new ResXResourceReader(filename);
+                if (inputfile.Length != 0)
+                {
+                    foreach (DictionaryEntry d in reader)
+                    {
+                        resourceEntries.Add(d.Key.ToString(), d.Value);
+                    }
+                }
+
+                reader.Close();
+
+                C1FlexGrid grdData = new C1FlexGrid();
+                var fc = new FontConverter();
+                if (resourceEntries.ContainsKey(to_write))
+                {
+                    grdData.StyleInfo = Convert.ToString(resourceEntries[to_write]);
+                    string styleName = node.Id.Split('.').ToList()[2];
+                    grdData.Styles[styleName].Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                    resourceEntries[to_write] = grdData.StyleInfo;
+                }
+                else
+                {
+                    FileInfo f = new FileInfo(filename);
+                    string default_filename = f.DirectoryName + @"\" + f.Name.Split('.').ToList().First() + "." + f.Name.Split('.').ToList().Last();
+                    var reader_default = new ResXResourceReader(default_filename);
+                    foreach (DictionaryEntry item in reader_default)
+                    {
+                        if (item.Key.ToString() == to_write)
+                        {
+                            grdData.StyleInfo = item.Value.ToString();
+                            resourceEntries.Add(item.Key.ToString(), grdData.StyleInfo);
+                            string styleName = node.Id.Split('.').ToList()[2];
+                            grdData.Styles[styleName].Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                            resourceEntries[to_write] = grdData.StyleInfo;
+                            break;
+                        }
+                    }
+                }
+
+                var resourceWriter = new ResXResourceWriter(filename);
+                foreach (String key in resourceEntries.Keys)
+                {
+                    if (key.EndsWith(".Font"))
+                    {
+                        fc = new FontConverter();
+                        Font f = resourceEntries[key] as Font;
+                        resourceWriter.AddResource(key, f);
+                    }
+                    else
+                    {
+                        resourceWriter.AddResource(key, resourceEntries[key]);
+                    }
+                }
+
+                resourceWriter.Generate();
+                resourceWriter.Close();
+            }
         }
 
         /// <summary>
