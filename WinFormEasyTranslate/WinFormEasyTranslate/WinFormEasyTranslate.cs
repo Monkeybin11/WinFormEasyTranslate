@@ -11,6 +11,7 @@ using OfficeOpenXml;
 using System.IO;
 using YMSL.CS4.FMS.CSCOM;
 using C1.Win.C1FlexGrid;
+using System.Xml;
 
 namespace WinFormEasyTranslate
 {
@@ -25,6 +26,7 @@ namespace WinFormEasyTranslate
         /// ダイアログ
         /// </summary>
         private SaveFileDialog dlgSave = new SaveFileDialog();
+
         #endregion
 
         /// <summary>
@@ -36,7 +38,7 @@ namespace WinFormEasyTranslate
         }
 
         #region イベント
- 
+
         /// <summary>
         /// 選択ボタン処理
         /// </summary>
@@ -51,6 +53,19 @@ namespace WinFormEasyTranslate
                 txtProjPath.Text = dlg.FileName;
                 FileInfo file = new FileInfo(txtProjPath.Text);
                 workpath = file.DirectoryName;
+            }
+        }
+
+        private void cmdClear_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                txtProjPath.Text = "";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                throw;
             }
         }
 
@@ -271,9 +286,9 @@ namespace WinFormEasyTranslate
                         cboType.Enabled = true;
                         cmdImport.Enabled = true;
                         cmdExport.Enabled = true;
-                        cmdJpTranslate.Enabled = true;
-                        cmdEnTranslate.Enabled = true;
-                        cmdzhChtTranslate.Enabled = true;
+                        cmdJpTranslate.Enabled = (sqlTransToCode.Text == "jp");
+                        cmdEnTranslate.Enabled = (sqlTransToCode.Text == "en");
+                        cmdzhChtTranslate.Enabled = (sqlTransToCode.Text == "zh-CHT");
                         break;
                     case FormState.RaiseError:
                         cmdSelect.Enabled = false;
@@ -308,6 +323,8 @@ namespace WinFormEasyTranslate
                 cmdzhChtTranslate.Click += CmdTranslate_Click;
 
                 txtProjPath.TextChanged += SearchCondition_Changed;
+
+                sqlTransToCode.SelectedIndexChanged += SearchCondition_Changed;
 
                 cboType.SelectedIndexChanged += SearchCondition_Changed;
                 cboType.Enter += SearchCondition_Enter;
@@ -344,6 +361,23 @@ namespace WinFormEasyTranslate
                     return false;
                 }
 
+                if (string.IsNullOrEmpty(lblTransFromCode.Text))
+                {
+                    MessageBox.Show("翻訳元の言語種類が見つかりません。\r\nSettring.xmlファイルを直してください。");
+                    return false;
+                }
+
+
+                if (string.IsNullOrEmpty(sqlTransToCode.Text))
+                {
+                    MessageBox.Show(this
+                                  , YMSL.CS4.FMS.CSCOM.Properties.Resources.SearchForm_Check_Input_Must.Replaces("翻訳先言語種類")
+                                  , this.Name
+                                  , MessageBoxButtons.OK
+                                  , MessageBoxIcon.Warning);
+                    return false;
+                }
+
                 return true;
             }
             catch (Exception)
@@ -353,6 +387,9 @@ namespace WinFormEasyTranslate
             }
         }
 
+        /// <summary>
+        /// グリッドの初期化
+        /// </summary>
         public override void InitGrid()
         {
             base.InitGrid();
@@ -386,6 +423,119 @@ namespace WinFormEasyTranslate
         }
 
         /// <summary>
+        /// 検索条件の初期化
+        /// </summary>
+        public override void InitSearchCondition()
+        {
+            try
+            {
+                txtProjPath.Text = "";
+                lblTransFromCode.Text = "";
+                lblTransFromName.Text = "";
+                sqlTransToCode.Text = "";
+                lblTransToName.Text = "";
+
+                InitSearchConditionByXmlFile();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// XMLファイルから翻訳の設定を読み込む
+        /// </summary>
+        private void InitSearchConditionByXmlFile()
+        {
+            try
+            {
+                string path = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + @"\xml\Settings.xml";
+
+                XmlDocument xmlDoc = new XmlDocument();
+
+                //XMLファイルの存在チェック
+                if (System.IO.File.Exists(path))
+                {
+                    //XMLファイルが存在する場合
+                    //-XMLファイルの読み込み
+                    xmlDoc.Load(path);
+                }
+
+                #region 翻訳先情報のデータテーブル初期化
+
+                DataTable dtTransToInfo = new DataTable();
+
+                dtTransToInfo.Columns.Add("CODE", typeof(string));
+                dtTransToInfo.Columns.Add("NAME", typeof(string));
+
+                #endregion
+
+                //対象ノードの情報を取得
+                XmlNode node = xmlDoc.SelectSingleNode("/ROOT");
+
+                foreach (XmlNode childNode in node.ChildNodes)
+                {
+                    if (childNode != null)
+                    {
+                        switch (childNode.Name)
+                        {
+                            case "TRANSLATE_FROM":
+                                lblTransFromCode.Text = childNode["CODE"].InnerText;
+                                lblTransFromName.Text = childNode["NAME"].InnerText;
+                                break;
+
+                            case "TRANSLATE_TO":
+                                DataRow dr = dtTransToInfo.NewRow();
+                                dr["CODE"] = childNode["CODE"].InnerText;
+                                dr["NAME"] = childNode["NAME"].InnerText;
+                                dtTransToInfo.Rows.Add(dr);
+                                break;
+
+                        }
+                    }
+                }
+
+                // 翻訳先のコンボボックスを初期化
+                sqlTransToCode.InitCombo(dtTransToInfo);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 検索条件を再セットする
+        /// </summary>
+        /// <param name="sender"></param>
+        public override void ReSetSearchCondition(object sender)
+        {
+            try
+            {
+                if (sender.Equals(sqlTransToCode))
+                {
+                    lblTransToName.Text = sqlTransToCode.GetSubText(1);
+                    for (int col = grdData.Cols["jp_value"].Index + 1; col < grdData.Cols.Count; col++)
+                    {
+                        if (sqlTransToCode.Text + "_value" == grdData.Cols[col].Name)
+                        {
+                            grdData.Cols[col].Visible = true;
+                        }
+                        else
+                        {
+                            grdData.Cols[col].Visible = false;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
         /// 検索処理
         /// </summary>
         /// <returns></returns>
@@ -393,8 +543,6 @@ namespace WinFormEasyTranslate
         {
             try
             {
-
-
                 List<ResourceDto> allWords = new List<ResourceDto>();
 
                 foreach (var filename in fileNames)
@@ -774,8 +922,7 @@ namespace WinFormEasyTranslate
             }
             return null;
         }
-        #endregion
 
- 
+        #endregion
     }
 }
