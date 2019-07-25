@@ -18,9 +18,9 @@ namespace WinFormEasyTranslate
     public partial class WinFormEasyTranslate : SearchForm
     {
         #region 変数
-        private string workpath = null;
+        private List<string> workPaths = new List<string>();
 
-        private List<FileInfo> fileNames = new List<FileInfo>();
+        private Dictionary<string, List<FileInfo>> fileNames = new Dictionary<string, List<FileInfo>>();
 
         /// <summary>
         /// ダイアログ
@@ -48,19 +48,32 @@ namespace WinFormEasyTranslate
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "プロジェクトファイル(*.csproj)|*.csproj";
+
             if (dlg.ShowDialog() == DialogResult.OK)
             {
-                txtProjPath.Text = dlg.FileName;
-                FileInfo file = new FileInfo(txtProjPath.Text);
-                workpath = file.DirectoryName;
+                if (!lbxProjPath.Text.Contains(dlg.FileName))
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine(string.Format("{0};", dlg.FileName));
+                    lbxProjPath.AppendText(sb.ToString());
+                    FileInfo file = new FileInfo(dlg.FileName);
+                    workPaths.Add(file.DirectoryName);
+                }
+                else
+                {
+                    MessageBox.Show("選択するプロジェクトは既に選択済みです、再度選択できません。");
+                    return;
+                }
             }
+
+            InitCboCI();
         }
 
         private void cmdClear_Click(object sender, EventArgs e)
         {
             try
             {
-                txtProjPath.Text = "";
+                lbxProjPath.Clear();
             }
             catch (Exception ex)
             {
@@ -104,9 +117,7 @@ namespace WinFormEasyTranslate
 
             if (dlgSave.FileName.Length == 0)
             {
-                FileInfo file = new FileInfo(txtProjPath.Text);
-
-                dlgSave.FileName = string.Format("{0}_辞書", Path.GetFileNameWithoutExtension(file.Name));
+                //dlgSave.FileName = string.Format("{0}_辞書", Path.GetFileNameWithoutExtension(file.Name));
             }
             else
             {
@@ -134,7 +145,7 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                string language = ((Button)sender).Tag.ToString();
+                string language = cboTransTo.SelectedValue.ToString();
 
                 var updateTarget = (from Row r in grdData.Rows.Cast<Row>()
                                     let rng = grdData.GetCellRange(r.Index, grdData.Cols[string.Format("{0}_value", language)].Index)
@@ -157,21 +168,11 @@ namespace WinFormEasyTranslate
                     var currentRow = gettor.Current;
 
                     string value = null;
-                    if (language == "jp")
-                    {
-                        value = Convert.ToString(currentRow["jp_value"]);
-                    }
-                    else if (language == "en")
-                    {
-                        value = Convert.ToString(currentRow["en_value"]);
-                    }
-                    else if (language == "zh-CHT")
-                    {
-                        value = Convert.ToString(currentRow["zh-CHT_value"]);
-                    }
+                    value = Convert.ToString(currentRow[string.Format("{0}_value", language)]);
 
                     string file_name = GetFileNameByClassNameAndLanguage(Convert.ToString(currentRow["class_name"]), language);
-                    string file_path = file_path = fileNames.Where(r => r.Name == file_name).First().FullName;
+                    string delault_language_file_name = GetFileNameByClassNameAndLanguage(Convert.ToString(currentRow["class_name"]), lblTransFrom.Tag.ToString());
+                    string file_path = fileNames[Convert.ToString(currentRow["ci"])].Where(r => r.Name == delault_language_file_name).First().DirectoryName + "\\" + file_name;
 
                     if (!File.Exists(file_path))
                     {
@@ -259,45 +260,35 @@ namespace WinFormEasyTranslate
                         cboType.Enabled = false;
                         cmdImport.Enabled = false;
                         cmdExport.Enabled = false;
-                        cmdJpTranslate.Enabled = false;
-                        cmdEnTranslate.Enabled = false;
-                        cmdzhChtTranslate.Enabled = false;
+                        cmdTranslate.Enabled = false;
                         break;
                     case FormState.BeforeShow:
                         cmdSelect.Enabled = true;
                         cboType.Enabled = true;
                         cmdImport.Enabled = false;
                         cmdExport.Enabled = false;
-                        cmdJpTranslate.Enabled = false;
-                        cmdEnTranslate.Enabled = false;
-                        cmdzhChtTranslate.Enabled = false;
+                        cmdTranslate.Enabled = false;
                         break;
                     case FormState.AfterShowNoData:
                         cmdSelect.Enabled = true;
                         cboType.Enabled = true;
                         cmdImport.Enabled = true;
                         cmdExport.Enabled = false;
-                        cmdJpTranslate.Enabled = false;
-                        cmdEnTranslate.Enabled = false;
-                        cmdzhChtTranslate.Enabled = false;
+                        cmdTranslate.Enabled = false;
                         break;
                     case FormState.AfterShowSomeData:
                         cmdSelect.Enabled = true;
                         cboType.Enabled = true;
                         cmdImport.Enabled = true;
                         cmdExport.Enabled = true;
-                        cmdJpTranslate.Enabled = (sqlTransToCode.Text == "jp");
-                        cmdEnTranslate.Enabled = (sqlTransToCode.Text == "en");
-                        cmdzhChtTranslate.Enabled = (sqlTransToCode.Text == "zh-CHT");
+                        cmdTranslate.Enabled = true;
                         break;
                     case FormState.RaiseError:
                         cmdSelect.Enabled = false;
                         cboType.Enabled = false;
                         cmdImport.Enabled = false;
                         cmdExport.Enabled = false;
-                        cmdJpTranslate.Enabled = false;
-                        cmdEnTranslate.Enabled = false;
-                        cmdzhChtTranslate.Enabled = false;
+                        cmdTranslate.Enabled = false;
                         break;
                     default:
                         break;
@@ -318,13 +309,12 @@ namespace WinFormEasyTranslate
             base.SetEventHandler();
             try
             {
-                cmdJpTranslate.Click += CmdTranslate_Click;
-                cmdEnTranslate.Click += CmdTranslate_Click;
-                cmdzhChtTranslate.Click += CmdTranslate_Click;
+                cmdTranslate.Click += CmdTranslate_Click;
 
-                txtProjPath.TextChanged += SearchCondition_Changed;
+                cboTransTo.SelectedIndexChanged += SearchCondition_Changed;
 
-                sqlTransToCode.SelectedIndexChanged += SearchCondition_Changed;
+                cboCI.Enter += SearchCondition_Enter;
+                cboClass.Enter += SearchCondition_Enter;
 
                 cboType.SelectedIndexChanged += SearchCondition_Changed;
                 cboType.Enter += SearchCondition_Enter;
@@ -347,28 +337,33 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                if (workpath == null)
+                if (workPaths.Count == 0)
                 {
                     MessageBox.Show("プロジェクトを選択してください。");
                     return false;
                 }
 
-                fileNames = new DirectoryInfo(workpath).GetFiles("*.resx", SearchOption.AllDirectories).ToList();
-
-                if(!fileNames.Where(r => r.Name.Contains(".en") || r.Name.Contains(".zh-CHT")).Any())
+                fileNames.Clear();
+                foreach (string workPath in workPaths)
                 {
-                    MessageBox.Show(this, "多言語構成を生成するため、Virtual Studioでプロジェクトに多言語を指定して、\r\n二つ言語ファイルを先に生成してください。", "事前ワークチェック", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                    return false;
+                    var files = new DirectoryInfo(workPath).GetFiles("*.resx", SearchOption.AllDirectories).ToList();
+
+                    if (!files.Where(r => r.Name.Contains(".en") || r.Name.Contains(".zh-CHT")).Any())
+                    {
+                        MessageBox.Show(this, "多言語構成を生成するため、Virtual Studioでプロジェクトに多言語を指定して、\r\n二つ言語ファイルを先に生成してください。", "事前ワークチェック", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                        return false;
+                    }
+                    fileNames.Add(Path.GetFileNameWithoutExtension(workPath), files);
                 }
 
-                if (string.IsNullOrEmpty(lblTransFromCode.Text))
+                if (string.IsNullOrEmpty(lblTransFrom.Text))
                 {
                     MessageBox.Show("翻訳元の言語種類が見つかりません。\r\nSettring.xmlファイルを直してください。");
                     return false;
                 }
 
 
-                if (string.IsNullOrEmpty(sqlTransToCode.Text))
+                if (string.IsNullOrEmpty(cboTransTo.Text))
                 {
                     MessageBox.Show(this
                                   , YMSL.CS4.FMS.CSCOM.Properties.Resources.SearchForm_Check_Input_Must.Replaces("翻訳先言語種類")
@@ -429,13 +424,28 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                txtProjPath.Text = "";
-                lblTransFromCode.Text = "";
-                lblTransFromName.Text = "";
-                sqlTransToCode.Text = "";
-                lblTransToName.Text = "";
+                lbxProjPath.Clear();
+                lblTransFrom.Text = "";
+                cboTransTo.Text = "";
+                cboCI.Text = "";
+                cboClass.Text = "";
 
-                InitSearchConditionByXmlFile();
+                InitLanguageByXmlFile();
+
+                #region クラスコンボボックスの初期化
+
+                DataTable dtClass = new DataTable();
+                dtClass.Columns.Add("key", typeof(int));
+                dtClass.Columns.Add("display_member", typeof(string));
+
+                dtClass.Rows.Add((int)0, "リソース");
+                dtClass.Rows.Add((int)1, "リソース以外");
+
+                cboClass.DataSource = dtClass;
+                cboClass.ValueMember = "key";
+                cboClass.DisplayMember = "display_member";
+
+                #endregion
             }
             catch (Exception)
             {
@@ -443,10 +453,7 @@ namespace WinFormEasyTranslate
             }
         }
 
-        /// <summary>
-        /// XMLファイルから翻訳の設定を読み込む
-        /// </summary>
-        private void InitSearchConditionByXmlFile()
+        private void InitLanguageByXmlFile()
         {
             try
             {
@@ -478,26 +485,30 @@ namespace WinFormEasyTranslate
                 {
                     if (childNode != null)
                     {
+                        grdData.Cols.Count++;
+                        grdData.Cols[grdData.Cols.Count - 1].Caption = string.Format("{0}値", childNode["NAME"].InnerText);
+                        grdData.Cols[grdData.Cols.Count - 1].Name = string.Format("{0}_value", childNode["CODE"].InnerText);
+                        grdData.Cols[grdData.Cols.Count - 1].TextAlignFixed = TextAlignEnum.CenterCenter;
+
                         switch (childNode.Name)
                         {
                             case "TRANSLATE_FROM":
-                                lblTransFromCode.Text = childNode["CODE"].InnerText;
-                                lblTransFromName.Text = childNode["NAME"].InnerText;
+                                lblTransFrom.Text = string.Format("{0} ({1})", childNode["NAME"].InnerText, childNode["CODE"].InnerText);
+                                lblTransFrom.Tag = childNode["CODE"].InnerText;
                                 break;
 
                             case "TRANSLATE_TO":
                                 DataRow dr = dtTransToInfo.NewRow();
-                                dr["CODE"] = childNode["CODE"].InnerText;
-                                dr["NAME"] = childNode["NAME"].InnerText;
+                                dr["CODE"] = Convert.ToString(childNode["CODE"].InnerText);
+                                dr["NAME"] = Convert.ToString(string.Format("{0} ({1})", childNode["NAME"].InnerText, childNode["CODE"].InnerText));
                                 dtTransToInfo.Rows.Add(dr);
                                 break;
-
                         }
                     }
                 }
-
-                // 翻訳先のコンボボックスを初期化
-                sqlTransToCode.InitCombo(dtTransToInfo);
+                cboTransTo.DataSource = dtTransToInfo;
+                cboTransTo.ValueMember = "CODE";
+                cboTransTo.DisplayMember = "NAME";
             }
             catch (Exception)
             {
@@ -513,19 +524,50 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                if (sender.Equals(sqlTransToCode))
+                if (sender.Equals(cboTransTo))
                 {
-                    lblTransToName.Text = sqlTransToCode.GetSubText(1);
-                    for (int col = grdData.Cols["jp_value"].Index + 1; col < grdData.Cols.Count; col++)
+                    for (int col = grdData.Cols["resource_key"].Index + 1; col < grdData.Cols.Count; col++)
                     {
-                        if (sqlTransToCode.Text + "_value" == grdData.Cols[col].Name)
+                        if (cboTransTo.SelectedValue + "_value" == grdData.Cols[col].Name)
                         {
-                            grdData.Cols[col].Visible = true;
+                            grdData.Cols[col].AllowEditing = true;
+                            grdData.Cols[col].StyleNew.BackColor = SystemColors.Window;
                         }
                         else
                         {
-                            grdData.Cols[col].Visible = false;
+                            grdData.Cols[col].AllowEditing = false;
+                            grdData.Cols[col].StyleNew.BackColor = Color.Gainsboro;
                         }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        private void InitCboCI()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(lbxProjPath.Text))
+                {
+                    cboCI.Text = "";
+                }
+                else
+                {
+                    var list = lbxProjPath.Text.Replace("\n", "").Replace("\r\n", "").Split(';').ToList();
+
+                    var reader = list.GetEnumerator();
+
+                    cboCI.Items.Clear();
+
+                    while(reader.MoveNext())
+                    {
+                        var proj = reader.Current;
+                        if (string.IsNullOrEmpty(proj.Trim())) continue;
+                        cboCI.Items.Add(Path.GetFileNameWithoutExtension(proj));
                     }
                 }
             }
@@ -545,15 +587,33 @@ namespace WinFormEasyTranslate
             {
                 List<ResourceDto> allWords = new List<ResourceDto>();
 
-                foreach (var filename in fileNames)
+                foreach (var ci in fileNames.Keys.Where(r => string.IsNullOrEmpty(cboCI.Text) ? true : r == cboCI.Text))
                 {
-                    if(filename.Name.Contains("Resources"))
+                    foreach (var filename in fileNames[ci])
                     {
-                        allWords.AddRange(GetResource(filename));
-                    }
-                    else
-                    {
-                        allWords.AddRange(GetFormResource(filename));
+                        if (string.IsNullOrEmpty(cboClass.Text))
+                        {
+                            if (filename.Name.Contains("Resources"))
+                            {
+                                allWords.AddRange(GetResource(ci, filename));
+                            }
+                            else
+                            {
+                                allWords.AddRange(GetFormResource(ci, filename));
+                            }
+                        }
+                        else
+                        {
+                            if (filename.Name.Contains("Resources") && (int)cboClass.SelectedValue == 0)
+                            {
+                                allWords.AddRange(GetResource(ci, filename));
+                            }
+
+                            if (!filename.Name.Contains("Resources") && (int)cboClass.SelectedValue == 1)
+                            {
+                                allWords.AddRange(GetFormResource(ci, filename));
+                            }
+                        }
                     }
                 }
 
@@ -577,21 +637,7 @@ namespace WinFormEasyTranslate
                                              Convert.ToString(row["resource_key"]) == current.resource_key
                                        select row);
 
-                    string language_colname = null;
-                    if (current.language == "jp")
-                    {
-                        language_colname = "jp_value";
-                    }
-
-                    if (current.language == "en")
-                    {
-                        language_colname = "en_value";
-                    }
-
-                    if (current.language == "zh-CHT")
-                    {
-                        language_colname = "zh-CHT_value";
-                    }
+                    string language_colname = string.Format("{0}_value", current.language);
 
                     if (check_exist.Any())
                     {
@@ -602,6 +648,7 @@ namespace WinFormEasyTranslate
                     else
                     {
                         grdData.Rows.Count++;
+                        grdData[grdData.Rows.Count - 1, "ci"] = current.ci;
                         grdData[grdData.Rows.Count - 1, "class_name"] = current.class_name;
                         grdData[grdData.Rows.Count - 1, "resource_key"] = current.resource_key;
                         grdData[grdData.Rows.Count - 1, "type"] = strtype;
@@ -626,7 +673,7 @@ namespace WinFormEasyTranslate
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public List<ResourceDto> GetResource(FileInfo fileinfo)
+        public List<ResourceDto> GetResource(string ci, FileInfo fileinfo)
         {
             try
             {
@@ -642,6 +689,7 @@ namespace WinFormEasyTranslate
                     wordDtos.Add(
                         new ResourceDto()
                         {
+                            ci = ci,
                             language = language,
                             file_name = from_filepath,
                             class_name = GetClassNameByFileName(fileinfo.Name),
@@ -665,7 +713,7 @@ namespace WinFormEasyTranslate
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public List<ResourceDto> GetFormResource(FileInfo fileinfo)
+        public List<ResourceDto> GetFormResource(string ci, FileInfo fileinfo)
         {
             try
             {
@@ -683,6 +731,7 @@ namespace WinFormEasyTranslate
                     wordDtos.Add(
                         new ResourceDto()
                         {
+                            ci = ci,
                             language = language,
                             file_name = from_filepath,
                             class_name = class_name,
@@ -721,7 +770,7 @@ namespace WinFormEasyTranslate
         /// <returns></returns>
         public string GetFileNameByClassNameAndLanguage(string classname, string language)
         {
-            if (language == "jp")
+            if (language == lblTransFrom.Tag.ToString())
                 return string.Format("{0}.resx", classname);
             else
                 return string.Format("{0}.{1}.resx", classname, language);
@@ -739,10 +788,10 @@ namespace WinFormEasyTranslate
                 List<string> strs = filename.Split('.').ToList();
                 string language = strs[strs.Count - 2];
 
-                if (language == "en" || language == "zh-CHT")
-                    return language;
+                if (strs.Count <= 2)
+                    return lblTransFrom.Tag.ToString();
                 else
-                    return "jp";
+                    return language;
             }
             catch (Exception)
             {
