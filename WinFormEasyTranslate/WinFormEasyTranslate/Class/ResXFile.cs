@@ -94,7 +94,7 @@ namespace WinFormEasyTranslate
                                 result.Add(
                                     new ResXEntry()
                                     {
-                                        Id = string.Format("{0}.Columns[{1}].Caption", grdControlName, colInfo.Index),
+                                        Id = string.Format("{0}.ColumnInfo.{1}.Caption", grdControlName, colInfo.Name),
                                         Value = colInfo.Caption,
                                         IsGridInfo = true,
                                     });
@@ -102,7 +102,7 @@ namespace WinFormEasyTranslate
                                 result.Add(
                                     new ResXEntry()
                                     {
-                                        Id = string.Format("{0}.Columns[{1}].Font", grdControlName, colInfo.Index),
+                                        Id = string.Format("{0}.ColumnInfo.{1}.Font", grdControlName, colInfo.Name),
                                         Value = colInfo.Style == null ? fc.ConvertToInvariantString(grdData.Styles.Normal.Font) : fc.ConvertToInvariantString(colInfo.Style.Font),
                                         IsGridInfo = true,
                                     });
@@ -119,7 +119,7 @@ namespace WinFormEasyTranslate
                                 result.Add(
                                     new ResXEntry()
                                     {
-                                        Id = string.Format("{0}.Styles.{1}.Font", grdControlName, styleInfo.Name),
+                                        Id = string.Format("{0}.StyleInfo.{1}.Font", grdControlName, styleInfo.Name),
                                         Value = fc.ConvertToInvariantString(styleInfo.Font),
                                         IsGridInfo = true,
                                     });
@@ -346,7 +346,7 @@ namespace WinFormEasyTranslate
         /// <param name="node"></param>
         public static void WriteGridInfo(string filename, ResXEntry node)
         {
-            if (node.Id.Contains(".Columns"))
+            if (node.Id.Contains(".ColumnInfo"))
             {
                 string to_write = string.Format("{0}.ColumnInfo", node.Id.Split('.').First());
                 var resourceEntries = new Hashtable();
@@ -368,11 +368,17 @@ namespace WinFormEasyTranslate
                 if (resourceEntries.ContainsKey(to_write))
                 {
                     grdData.ColumnInfo = Convert.ToString(resourceEntries[to_write]);
-                    int colIndex = Convert.ToInt32(node.Id.Split('.').ToList()[1].Replace("Columns", "").Replace("[", "").Replace("]", ""));
+                    string colName = node.Id.Split('.').ToList()[node.Id.Split('.').Count() - 2];
                     if (node.Id.EndsWith(".Caption"))
-                        grdData.Cols[colIndex].Caption = node.Value;
+                        grdData.Cols[colName].Caption = node.Value;
                     else if (node.Id.EndsWith(".Font"))
-                        grdData.Cols[colIndex].Style.Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                    {
+                        if (string.IsNullOrEmpty(node.Value))
+                            grdData.Cols[colName].Style = null;
+                        else
+                            grdData.Cols[colName].Style.Font = fc.ConvertFromInvariantString(node.Value) as Font;
+
+                    }
                     resourceEntries[to_write] = grdData.ColumnInfo;
                 }
                 else
@@ -386,11 +392,16 @@ namespace WinFormEasyTranslate
                         {
                             grdData.ColumnInfo = item.Value.ToString();
                             resourceEntries.Add(item.Key.ToString(), grdData.ColumnInfo);
-                            int colIndex = Convert.ToInt32(node.Id.Split('.').ToList()[1].Replace("Columns", "").Replace("[", "").Replace("]", ""));
+                            string colName = node.Id.Split('.').ToList()[node.Id.Split('.').Count() - 2];
                             if (node.Id.EndsWith(".Caption"))
-                                grdData.Cols[colIndex].Caption = node.Value;
+                                grdData.Cols[colName].Caption = node.Value;
                             else if (node.Id.EndsWith(".Font"))
-                                grdData.Cols[colIndex].Style.Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                            {
+                                if (string.IsNullOrEmpty(node.Value))
+                                    grdData.Cols[colName].Style = null;
+                                else
+                                    grdData.Cols[colName].Style.Font = fc.ConvertFromInvariantString(node.Value) as Font;
+                            }
                             resourceEntries[to_write] = grdData.ColumnInfo;
                             break;
                         }
@@ -415,7 +426,7 @@ namespace WinFormEasyTranslate
                 resourceWriter.Generate();
                 resourceWriter.Close();
             }
-            else if(node.Id.Contains(".Styles"))
+            else if(node.Id.Contains(".StyleInfo"))
             {
                 string to_write = string.Format("{0}.StyleInfo", node.Id.Split('.').First());
                 var resourceEntries = new Hashtable();

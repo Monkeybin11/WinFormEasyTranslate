@@ -155,7 +155,7 @@
             this.cmdExport.Name = "cmdExport";
             this.cmdExport.Size = new System.Drawing.Size(112, 30);
             this.cmdExport.TabIndex = 10;
-            this.cmdExport.Text = "辞書エクスポート";
+            this.cmdExport.Text = "エクスポート";
             this.cmdExport.UseVisualStyleBackColor = false;
             this.cmdExport.Click += new System.EventHandler(this.cmdExport_Click);
             // 

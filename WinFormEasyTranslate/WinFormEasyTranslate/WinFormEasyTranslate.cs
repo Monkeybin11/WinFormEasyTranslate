@@ -91,7 +91,7 @@ namespace WinFormEasyTranslate
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Title = "辞書を選択してください。";
-            dlg.Filter = "辞書ファイル(*.xlsx)|*.xlsx";
+            dlg.Filter = "辞書ファイル(*.xlsx)|*.xlsx|辞書ファイル(*.xlsm)|*.xlsm";
             if (dlg.ShowDialog() == DialogResult.OK)
             {
                 DataTable loadedDictionary = ExcelToDt(dlg.FileName, true);
@@ -444,6 +444,7 @@ namespace WinFormEasyTranslate
                 cboClass.DataSource = dtClass;
                 cboClass.ValueMember = "key";
                 cboClass.DisplayMember = "display_member";
+                cboClass.SelectedIndex = -1;
 
                 #endregion
             }
@@ -657,7 +658,6 @@ namespace WinFormEasyTranslate
                     }
                 }
 
-                grdData.AutoSizeCols();
                 grdData.AutoSizeRows();
                 return grdData.Rows.Count - grdData.Rows.Fixed;
             }
@@ -692,7 +692,7 @@ namespace WinFormEasyTranslate
                             ci = ci,
                             language = language,
                             file_name = from_filepath,
-                            class_name = GetClassNameByFileName(fileinfo.Name),
+                            class_name = "Resource",
                             resource_key = word.Id,
                             value = word.Value,
                             is_grid_info = word.IsGridInfo,
@@ -808,7 +808,7 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                var gettor = datatable.AsEnumerable().Where(r => cboType.Text == "全て" || Convert.ToString(r["種類"]) == cboType.Text).GetEnumerator();
+                var gettor = datatable.AsEnumerable().GetEnumerator();
 
                 while (gettor.MoveNext())
                 {
@@ -816,46 +816,34 @@ namespace WinFormEasyTranslate
 
                     var check_exist = (from Row row in grdData.Rows.Cast<Row>()
                                        where row.Index >= grdData.Rows.Fixed &&
-                                             Convert.ToString(row["class_name"]) == Convert.ToString(current[grdData.Cols["class_name"].Caption]) &&
-                                             Convert.ToString(row["resource_key"]) == Convert.ToString(current[grdData.Cols["resource_key"].Caption])
+                                             Convert.ToString(row["ci"]).ToLower() == Convert.ToString(current["ci"]).ToLower() &&
+                                             Convert.ToString(row["class_name"]).ToLower() == Convert.ToString(current["class_name"]).ToLower() &&
+                                             (Convert.ToString(row["resource_key"]).ToLower() == Convert.ToString(current["resource_key"]).ToLower() ||
+                                              Convert.ToString(row["resource_key"]).ToLower() == (Convert.ToString(current["resource_key"]) + ".Caption").ToLower())
                                        select row);
 
                     if (check_exist.Any())
                     {
                         var update_row = check_exist.FirstOrDefault();
-                        if (!string.IsNullOrEmpty(Convert.ToString(current[grdData.Cols["jp_value"].Caption])) &&
-                            Convert.ToString(update_row["jp_value"]) != Convert.ToString(current[grdData.Cols["jp_value"].Caption]).Replace("\n", "\r\n"))
+                        var targetColName = string.Format("{0}_value", cboTransTo.SelectedValue);
+                        if (!string.IsNullOrEmpty(Convert.ToString(current[targetColName])) &&
+                            Convert.ToString(update_row[targetColName]) != Convert.ToString(current[targetColName]).Replace("\n", "\r\n"))
                         {
-                            update_row["jp_value"] = Convert.ToString(current[grdData.Cols["jp_value"].Caption]).Replace("\n", "\r\n");
-                            CellRange rng = grdData.GetCellRange(update_row.Index, grdData.Cols["jp_value"].Index);
-                            rng.StyleNew.ForeColor = Color.Blue;
-                        }
-
-                        if (!string.IsNullOrEmpty(Convert.ToString(current[grdData.Cols["en_value"].Caption])) &&
-                            Convert.ToString(update_row["en_value"]) != Convert.ToString(current[grdData.Cols["en_value"].Caption]).Replace("\n", "\r\n"))
-                        {
-                            update_row["en_value"] = Convert.ToString(current[grdData.Cols["en_value"].Caption]).Replace("\n", "\r\n");
-                            CellRange rng = grdData.GetCellRange(update_row.Index, grdData.Cols["en_value"].Index);
-                            rng.StyleNew.ForeColor = Color.Blue;
-                        }
-
-                        if (!string.IsNullOrEmpty(Convert.ToString(current[grdData.Cols["zh-CHT_value"].Caption])) &&
-                            Convert.ToString(update_row["zh-CHT_value"]) != Convert.ToString(current[grdData.Cols["zh-CHT_value"].Caption]).Replace("\n", "\r\n"))
-                        {
-                            update_row["zh-CHT_value"] = Convert.ToString(current[grdData.Cols["zh-CHT_value"].Caption]).Replace("\n", "\r\n");
-                            CellRange rng = grdData.GetCellRange(update_row.Index, grdData.Cols["zh-CHT_value"].Index);
+                            update_row[targetColName] = Convert.ToString(current[targetColName]).Replace("\n", "\r\n");
+                            CellRange rng = grdData.GetCellRange(update_row.Index, grdData.Cols[targetColName].Index);
                             rng.StyleNew.ForeColor = Color.Blue;
                         }
                     }
                     else
                     {
-                        grdData.Rows.Count++;
-                        grdData[grdData.Rows.Count - 1, "class_name"] = Convert.ToString(current[grdData.Cols["class_name"].Caption]);
-                        grdData[grdData.Rows.Count - 1, "resource_key"] = Convert.ToString(current[grdData.Cols["resource_key"].Caption]);
-                        grdData[grdData.Rows.Count - 1, "jp_value"] = Convert.ToString(current[grdData.Cols["jp_value"].Caption]).Replace("\n", "\r\n");
-                        grdData[grdData.Rows.Count - 1, "en_value"] = Convert.ToString(current[grdData.Cols["en_value"].Caption]).Replace("\n", "\r\n");
-                        grdData[grdData.Rows.Count - 1, "zh-CHT_value"] = Convert.ToString(current[grdData.Cols["zh-CHT_value"].Caption]).Replace("\n", "\r\n");
-                        grdData.Rows[grdData.Rows.Count - 1].StyleNew.ForeColor = Color.Blue;
+                        //grdData.Rows.Count++;
+                        //grdData[grdData.Rows.Count - 1, "class_name"] = Convert.ToString(current[grdData.Cols["class_name"].Caption]);
+                        //grdData[grdData.Rows.Count - 1, "resource_key"] = Convert.ToString(current[grdData.Cols["resource_key"].Caption]);
+                        //grdData[grdData.Rows.Count - 1, "jp_value"] = Convert.ToString(current[grdData.Cols["jp_value"].Caption]).Replace("\n", "\r\n");
+                        //grdData[grdData.Rows.Count - 1, "en_value"] = Convert.ToString(current[grdData.Cols["en_value"].Caption]).Replace("\n", "\r\n");
+                        //grdData[grdData.Rows.Count - 1, "zh-CHT_value"] = Convert.ToString(current[grdData.Cols["zh-CHT_value"].Caption]).Replace("\n", "\r\n");
+                        //grdData.Rows[grdData.Rows.Count - 1].StyleNew.ForeColor = Color.Blue;
+                        continue;
                     }
                 }
             }
@@ -938,7 +926,7 @@ namespace WinFormEasyTranslate
                     using (stream)
                     {
                         ExcelPackage package = new ExcelPackage(stream);
-                        ExcelWorksheet sheet = package.Workbook.Worksheets[1];
+                        ExcelWorksheet sheet = package.Workbook.Worksheets[2];
                         int startRowIndx = sheet.Dimension.Start.Row + (isSkipFirstRow ? 1 : 0);
 
                         for (int col = 1; col <= sheet.Dimension.End.Column; col++)
