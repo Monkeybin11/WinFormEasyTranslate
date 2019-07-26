@@ -36,7 +36,6 @@
             this.lblType = new YMSL.CS4.FMS.CSCOM.LabelPYMAC(this.components);
             this.cboType = new System.Windows.Forms.ComboBox();
             this.cmdImport = new System.Windows.Forms.Button();
-            this.cmdExport = new System.Windows.Forms.Button();
             this.lblTrans = new YMSL.CS4.FMS.CSCOM.LabelPYMAC(this.components);
             this.label2 = new System.Windows.Forms.Label();
             this.lblTransFrom = new System.Windows.Forms.Label();
@@ -46,7 +45,9 @@
             this.cboClass = new System.Windows.Forms.ComboBox();
             this.lblClass = new YMSL.CS4.FMS.CSCOM.LabelPYMAC(this.components);
             this.cboTransTo = new System.Windows.Forms.ComboBox();
-            this.lbxProjPath = new System.Windows.Forms.RichTextBox();
+            this.txtProjPath = new System.Windows.Forms.RichTextBox();
+            this.lblDictPath = new System.Windows.Forms.Label();
+            this.cmdDictSelect = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.grdData)).BeginInit();
             this.SuspendLayout();
             // 
@@ -54,31 +55,41 @@
             // 
             this.grdData.AllowEditing = true;
             this.grdData.AllowSorting = C1.Win.C1FlexGrid.AllowSortingEnum.SingleColumn;
+            this.grdData.AutoClipboard = true;
             this.grdData.ColumnInfo = resources.GetString("grdData.ColumnInfo");
             this.grdData.Location = new System.Drawing.Point(0, 140);
             this.grdData.Rows.Count = 1;
             this.grdData.Rows.DefaultSize = 21;
-            this.grdData.Size = new System.Drawing.Size(792, 372);
+            this.grdData.SelectionMode = C1.Win.C1FlexGrid.SelectionModeEnum.CellRange;
+            this.grdData.Size = new System.Drawing.Size(826, 376);
+            this.grdData.StyleInfo = resources.GetString("grdData.StyleInfo");
             this.grdData.TabIndex = 8;
+            this.grdData.ChangeEdit += new System.EventHandler(this.grdData_ChangeEdit);
             // 
             // cmdShow
             // 
-            this.cmdShow.Location = new System.Drawing.Point(680, 111);
+            this.cmdShow.Location = new System.Drawing.Point(714, 111);
             this.cmdShow.TabIndex = 7;
             // 
             // cmdClose
             // 
+            this.cmdClose.Location = new System.Drawing.Point(714, 522);
             this.cmdClose.TabIndex = 15;
             // 
             // cmdReset
             // 
+            this.cmdReset.Location = new System.Drawing.Point(608, 522);
             this.cmdReset.TabIndex = 14;
+            // 
+            // lblVersion
+            // 
+            this.lblVersion.Location = new System.Drawing.Point(608, 0);
             // 
             // cmdTranslate
             // 
             this.cmdTranslate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdTranslate.BackColor = System.Drawing.SystemColors.Control;
-            this.cmdTranslate.Location = new System.Drawing.Point(468, 518);
+            this.cmdTranslate.Location = new System.Drawing.Point(502, 522);
             this.cmdTranslate.Name = "cmdTranslate";
             this.cmdTranslate.Size = new System.Drawing.Size(100, 30);
             this.cmdTranslate.TabIndex = 13;
@@ -89,7 +100,7 @@
             // cmdSelect
             // 
             this.cmdSelect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmdSelect.Location = new System.Drawing.Point(680, 27);
+            this.cmdSelect.Location = new System.Drawing.Point(714, 27);
             this.cmdSelect.Name = "cmdSelect";
             this.cmdSelect.Size = new System.Drawing.Size(100, 23);
             this.cmdSelect.TabIndex = 1;
@@ -137,27 +148,15 @@
             // 
             // cmdImport
             // 
-            this.cmdImport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.cmdImport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdImport.BackColor = System.Drawing.SystemColors.Control;
-            this.cmdImport.Location = new System.Drawing.Point(3, 518);
+            this.cmdImport.Location = new System.Drawing.Point(398, 522);
             this.cmdImport.Name = "cmdImport";
             this.cmdImport.Size = new System.Drawing.Size(100, 30);
             this.cmdImport.TabIndex = 9;
             this.cmdImport.Text = "辞書読込";
             this.cmdImport.UseVisualStyleBackColor = false;
             this.cmdImport.Click += new System.EventHandler(this.cmdImport_Click);
-            // 
-            // cmdExport
-            // 
-            this.cmdExport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.cmdExport.BackColor = System.Drawing.SystemColors.Control;
-            this.cmdExport.Location = new System.Drawing.Point(107, 518);
-            this.cmdExport.Name = "cmdExport";
-            this.cmdExport.Size = new System.Drawing.Size(112, 30);
-            this.cmdExport.TabIndex = 10;
-            this.cmdExport.Text = "エクスポート";
-            this.cmdExport.UseVisualStyleBackColor = false;
-            this.cmdExport.Click += new System.EventHandler(this.cmdExport_Click);
             // 
             // lblTrans
             // 
@@ -197,7 +196,7 @@
             // cmdClear
             // 
             this.cmdClear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmdClear.Location = new System.Drawing.Point(680, 56);
+            this.cmdClear.Location = new System.Drawing.Point(714, 56);
             this.cmdClear.Name = "cmdClear";
             this.cmdClear.Size = new System.Drawing.Size(100, 23);
             this.cmdClear.TabIndex = 2;
@@ -259,34 +258,59 @@
             this.cboTransTo.Size = new System.Drawing.Size(223, 23);
             this.cboTransTo.TabIndex = 17;
             // 
-            // lbxProjPath
+            // txtProjPath
             // 
-            this.lbxProjPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.txtProjPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.lbxProjPath.BackColor = System.Drawing.SystemColors.Control;
-            this.lbxProjPath.Location = new System.Drawing.Point(107, 27);
-            this.lbxProjPath.Name = "lbxProjPath";
-            this.lbxProjPath.ReadOnly = true;
-            this.lbxProjPath.Size = new System.Drawing.Size(567, 52);
-            this.lbxProjPath.TabIndex = 18;
-            this.lbxProjPath.Text = "";
+            this.txtProjPath.BackColor = System.Drawing.SystemColors.Control;
+            this.txtProjPath.Location = new System.Drawing.Point(107, 27);
+            this.txtProjPath.Name = "txtProjPath";
+            this.txtProjPath.ReadOnly = true;
+            this.txtProjPath.Size = new System.Drawing.Size(601, 52);
+            this.txtProjPath.TabIndex = 18;
+            this.txtProjPath.Text = "";
+            // 
+            // lblDictPath
+            // 
+            this.lblDictPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblDictPath.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.lblDictPath.Font = new System.Drawing.Font("MS UI Gothic", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.lblDictPath.Location = new System.Drawing.Point(109, 527);
+            this.lblDictPath.Name = "lblDictPath";
+            this.lblDictPath.Size = new System.Drawing.Size(283, 23);
+            this.lblDictPath.TabIndex = 0;
+            this.lblDictPath.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // cmdDictSelect
+            // 
+            this.cmdDictSelect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.cmdDictSelect.BackColor = System.Drawing.SystemColors.Control;
+            this.cmdDictSelect.Location = new System.Drawing.Point(3, 522);
+            this.cmdDictSelect.Name = "cmdDictSelect";
+            this.cmdDictSelect.Size = new System.Drawing.Size(100, 30);
+            this.cmdDictSelect.TabIndex = 9;
+            this.cmdDictSelect.Text = "辞書選択";
+            this.cmdDictSelect.UseVisualStyleBackColor = false;
+            this.cmdDictSelect.Click += new System.EventHandler(this.cmdDictSelect_Click);
             // 
             // WinFormEasyTranslate
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(792, 573);
-            this.Controls.Add(this.lbxProjPath);
+            this.ClientSize = new System.Drawing.Size(826, 577);
+            this.Controls.Add(this.txtProjPath);
             this.Controls.Add(this.cboTransTo);
             this.Controls.Add(this.cboClass);
             this.Controls.Add(this.lblClass);
             this.Controls.Add(this.cboCI);
             this.Controls.Add(this.lblCI);
             this.Controls.Add(this.cmdClear);
+            this.Controls.Add(this.lblDictPath);
             this.Controls.Add(this.lblTransFrom);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.lblTrans);
-            this.Controls.Add(this.cmdExport);
+            this.Controls.Add(this.cmdDictSelect);
             this.Controls.Add(this.cmdImport);
             this.Controls.Add(this.cboType);
             this.Controls.Add(this.lblType);
@@ -304,7 +328,7 @@
             this.Controls.SetChildIndex(this.lblType, 0);
             this.Controls.SetChildIndex(this.cboType, 0);
             this.Controls.SetChildIndex(this.cmdImport, 0);
-            this.Controls.SetChildIndex(this.cmdExport, 0);
+            this.Controls.SetChildIndex(this.cmdDictSelect, 0);
             this.Controls.SetChildIndex(this.lblTrans, 0);
             this.Controls.SetChildIndex(this.cmdShow, 0);
             this.Controls.SetChildIndex(this.grdData, 0);
@@ -313,13 +337,14 @@
             this.Controls.SetChildIndex(this.lblVersion, 0);
             this.Controls.SetChildIndex(this.label2, 0);
             this.Controls.SetChildIndex(this.lblTransFrom, 0);
+            this.Controls.SetChildIndex(this.lblDictPath, 0);
             this.Controls.SetChildIndex(this.cmdClear, 0);
             this.Controls.SetChildIndex(this.lblCI, 0);
             this.Controls.SetChildIndex(this.cboCI, 0);
             this.Controls.SetChildIndex(this.lblClass, 0);
             this.Controls.SetChildIndex(this.cboClass, 0);
             this.Controls.SetChildIndex(this.cboTransTo, 0);
-            this.Controls.SetChildIndex(this.lbxProjPath, 0);
+            this.Controls.SetChildIndex(this.txtProjPath, 0);
             ((System.ComponentModel.ISupportInitialize)(this.grdData)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -333,7 +358,6 @@
         private YMSL.CS4.FMS.CSCOM.LabelPYMAC lblType;
         private System.Windows.Forms.ComboBox cboType;
         private System.Windows.Forms.Button cmdImport;
-        private System.Windows.Forms.Button cmdExport;
         private YMSL.CS4.FMS.CSCOM.LabelPYMAC lblTrans;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label lblTransFrom;
@@ -343,7 +367,9 @@
         private System.Windows.Forms.ComboBox cboClass;
         private YMSL.CS4.FMS.CSCOM.LabelPYMAC lblClass;
         private System.Windows.Forms.ComboBox cboTransTo;
-        private System.Windows.Forms.RichTextBox lbxProjPath;
+        private System.Windows.Forms.RichTextBox txtProjPath;
+        private System.Windows.Forms.Label lblDictPath;
+        private System.Windows.Forms.Button cmdDictSelect;
     }
 }
 
