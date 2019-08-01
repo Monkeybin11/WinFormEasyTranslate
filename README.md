@@ -18,3 +18,7 @@
 在程序文件夹中有一个xml文件夹，里面有一个setting.xml文件，打开按照以下进行设定：
 
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/setting_xml.png)
+
+#### 画面操作
+
+![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step1.png)
