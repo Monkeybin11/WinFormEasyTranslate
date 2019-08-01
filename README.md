@@ -13,3 +13,8 @@
 <li>第二个sheet页的标准格式。第一行一定为title名，且必须包含ci，class_name，resource_key这几页，后面的对应的语言翻译标题名为语言缩略字+“_value”。 请设定好配置文件中定义的所有语言。可参考下图：</li>
 
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/dictionary_title_format.png)
+
+#### 工具配置设定
+在程序文件夹中有一个xml文件夹，里面有一个setting.xml文件，打开按照以下进行设定：
+
+![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/setting_xml.png)
