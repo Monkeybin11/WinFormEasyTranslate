@@ -24,3 +24,7 @@
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step1.png)
 
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step2.png)
+
+![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step3.png)
+
+![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step4.png)
