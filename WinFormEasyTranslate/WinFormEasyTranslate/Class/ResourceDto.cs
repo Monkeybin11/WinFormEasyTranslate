@@ -11,6 +11,7 @@ namespace WinFormEasyTranslate
     /// </summary>
     public class ResourceDto
     {
+        public string ci { get; set; }
         /// <summary>
         /// 言語
         /// </summary>
