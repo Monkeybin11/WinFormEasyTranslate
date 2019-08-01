@@ -22,3 +22,5 @@
 #### 画面操作
 
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step1.png)
+
+![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step2.png)
