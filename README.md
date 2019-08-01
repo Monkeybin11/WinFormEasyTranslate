@@ -28,3 +28,8 @@
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step3.png)
 
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/step4.png)
+
+#### 注意
+<li>用工具翻译完后，请自己再确认是否正确！！！</li>
+<li>用工具翻译完后，请自己再确认是否正确！！！</li>
+<li>用工具翻译完后，请自己再确认是否正确！！！</li>
