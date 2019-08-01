@@ -365,6 +365,7 @@ namespace WinFormEasyTranslate
 
                 cboCI.Enter += SearchCondition_Enter;
                 cboClass.Enter += SearchCondition_Enter;
+                txtProjPath.TextChanged += SearchCondition_Enter;
 
                 cboType.SelectedIndexChanged += SearchCondition_Changed;
                 cboType.Enter += SearchCondition_Enter;
