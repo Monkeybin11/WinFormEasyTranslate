@@ -4,7 +4,7 @@
 一个用于将Winform按照辞书进行迅速翻译的工具。使用该工具，告别传统做多国语化的农耕时代，工具化进入工业时代。
 
 点击我下载完全工具程序包：
-[WinFormEasyTranslate_ver.1.0.0.0.zip](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/执行程序包/WinFormEasyTranslate_ver.1.0.0.0.zip)
+[WinFormEasyTranslate_ver.1.0.0.0.zip](执行程序包/WinFormEasyTranslate_ver.1.0.0.0.zip)
 
 ## 使用方法
 #### 准备辞书
