@@ -9,7 +9,7 @@
 ## 使用方法
 #### 准备辞书
 辞书的格式请务必遵循以下的格式。
-<li>辞书为excel2017的文件格式.xlsm或.xlsx。</li>
+<li>辞书为excel文件格式.xlsx。</li>
 <li>拥有两个sheet页，这么做的原因是希望能够将修改的履历记录下来，所以第一个sheet页为履历页。第二个sheet页为真正的辞书放置页，名字可自由命名。比如你可以这样做：</li>
 
 ![](https://github.com/wemanclh/WinFormEasyTranslate/raw/master/img/sheet_format.png)
