@@ -5,7 +5,7 @@ namespace WinFormEasyTranslate
     /// <summary>
     /// リソース項目文字化標準クラス
     /// </summary>
-    public class ResXEntry : IComparable
+    public class ResXRecord : IComparable
     {
         /// <summary>
         /// リソースID
@@ -27,9 +27,9 @@ namespace WinFormEasyTranslate
 
         public int CompareTo(object obj)
         {
-            if (obj is ResXEntry)
+            if (obj is ResXRecord)
             {
-                return this.Id.CompareTo((obj as ResXEntry).Id);
+                return this.Id.CompareTo((obj as ResXRecord).Id);
             }
 
             return this.Id.CompareTo(obj.ToString());

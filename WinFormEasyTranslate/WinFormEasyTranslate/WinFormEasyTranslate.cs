@@ -18,7 +18,7 @@ namespace WinFormEasyTranslate
     public partial class WinFormEasyTranslate : SearchForm
     {
         #region 変数
-        private List<string> workPaths = new List<string>();
+        private List<string> ProjectPaths = new List<string>();
 
         private Dictionary<string, List<FileInfo>> fileNames = new Dictionary<string, List<FileInfo>>();
 
@@ -58,7 +58,7 @@ namespace WinFormEasyTranslate
 
                     txtProjPath.AppendText(sb.ToString());
                     FileInfo file = new FileInfo(dlg.FileName);
-                    workPaths.Add(file.DirectoryName);
+                    ProjectPaths.Add(file.DirectoryName);
 
                     // XMLファイルの読み込み
                     XmlDom _XmlDom = new XmlDom();
@@ -78,12 +78,17 @@ namespace WinFormEasyTranslate
             InitCboCI();
         }
 
+        /// <summary>
+        /// 選択されたプロジェクトをクリア処理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void cmdClear_Click(object sender, EventArgs e)
         {
             try
             {
                 txtProjPath.Clear();
-                workPaths.Clear();
+                ProjectPaths.Clear();
             }
             catch (Exception ex)
             {
@@ -92,6 +97,11 @@ namespace WinFormEasyTranslate
             }
         }
 
+        /// <summary>
+        /// 辞書選択
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void cmdDictSelect_Click(object sender, EventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
@@ -379,7 +389,6 @@ namespace WinFormEasyTranslate
             }
         }
 
-
         /// <summary>
         /// 検索条件のチェック
         /// </summary>
@@ -388,14 +397,14 @@ namespace WinFormEasyTranslate
         {
             try
             {
-                if (workPaths.Count == 0)
+                if (ProjectPaths.Count == 0)
                 {
                     MessageBox.Show("プロジェクトを選択してください。");
                     return false;
                 }
 
                 fileNames.Clear();
-                foreach (string workPath in workPaths)
+                foreach (string workPath in ProjectPaths)
                 {
                     var files = new DirectoryInfo(workPath).GetFiles("*.resx", SearchOption.AllDirectories).ToList();
 
@@ -509,8 +518,8 @@ namespace WinFormEasyTranslate
 
                 if (!string.IsNullOrEmpty(txtProjPath.Text))
                 {
-                    workPaths = txtProjPath.Text.Replace("\n", "").Replace("\r\n", "").Split(';').ToList();
-                    workPaths = workPaths.Where(r => r.Trim() != "").Select(r => Path.GetDirectoryName(r)).ToList();
+                    ProjectPaths = txtProjPath.Text.Replace("\n", "").Replace("\r\n", "").Split(';').ToList();
+                    ProjectPaths = ProjectPaths.Where(r => r.Trim() != "").Select(r => Path.GetDirectoryName(r)).ToList();
                     InitCboCI();
                 }
             }
@@ -752,7 +761,7 @@ namespace WinFormEasyTranslate
 
                 string from_filepath = fileinfo.FullName;
 
-                List<ResXEntry> WordInfos = ResXFile.ReadResource(from_filepath, ResXFile.Option.None);
+                List<ResXRecord> WordInfos = ResXFileManager.ReadResource(from_filepath);
                 string language = GetLanguageByFileName(fileinfo.Name);
 
                 foreach (var word in WordInfos)
@@ -792,7 +801,7 @@ namespace WinFormEasyTranslate
 
                 string from_filepath = fileinfo.FullName;
 
-                List<ResXEntry> WordInfos = ResXFile.ReadFormResource(from_filepath, ResXFile.Option.None);
+                List<ResXRecord> WordInfos = ResXFileManager.ReadFormResource(from_filepath);
 
                 string class_name = GetClassNameByFileName(fileinfo.Name);
                 string language = GetLanguageByFileName(fileinfo.Name);
@@ -943,7 +952,7 @@ namespace WinFormEasyTranslate
 
                     string filename = current.file_name;
 
-                    ResXFile.Write(filename, new ResXEntry() { Id = current.resource_key, Value = current.value });
+                    ResXFileManager.WriteResource(filename, new ResXRecord() { Id = current.resource_key, Value = current.value });
                 }
             }
             catch (Exception)
@@ -970,7 +979,7 @@ namespace WinFormEasyTranslate
 
                     string filename = current.file_name;
 
-                    ResXFile.WriteGridInfo(filename, new ResXEntry() { Id = current.resource_key, Value = current.value });
+                    ResXFileManager.WriteGridInfo(filename, new ResXRecord() { Id = current.resource_key, Value = current.value });
                 }
             }
             catch (Exception)

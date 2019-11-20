@@ -9,44 +9,29 @@ using System.Drawing;
 using C1.Win.C1FlexGrid;
 using System.Data;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace WinFormEasyTranslate
 {
     /// <summary>
     /// Resourceファイル操作クラス
     /// </summary>
-    public static class ResXFile
+    public static class ResXFileManager
     {
-        /// <summary>
-        /// 选项
-        /// </summary>
-        [Flags]
-        public enum Option
-        {
-            /// <summary>
-            /// 全部
-            /// </summary>
-            None = 0,
-
-            /// <summary>
-            /// 跳过comment
-            /// </summary>
-            SkipComments = 1,
-        }
-
+        #region 読込処理
         /// <summary>
         /// 画面リソースからリソース項目を抽出する
         /// </summary>
         /// <param name="filename"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public static List<ResXEntry> ReadFormResource(string filename, Option options = Option.None)
+        public static List<ResXRecord> ReadFormResource(string filename)
         {
             try
             {
-                var result = new List<ResXEntry>();
+                var result = new List<ResXRecord>();
 
-                var listNodes = GetResourceNodes(filename, options);
+                var listNodes = GetResourceNodes(filename);
 
                 if (listNodes.Count() == 0) return result;
 
@@ -79,7 +64,7 @@ namespace WinFormEasyTranslate
                                 nodevalue = fc.ConvertToInvariantString(fontValue);
 
                                 result.Add(
-                                    new ResXEntry()
+                                    new ResXRecord()
                                     {
                                         Id = node.Name as string,
                                         Value = nodevalue,
@@ -94,7 +79,7 @@ namespace WinFormEasyTranslate
                                 foreach (Column colInfo in grdData.Cols)
                                 {
                                     result.Add(
-                                        new ResXEntry()
+                                        new ResXRecord()
                                         {
                                             Id = string.Format("{0}.ColumnInfo.{1}.Caption", grdControlName, colInfo.Name),
                                             Value = colInfo.Caption,
@@ -102,7 +87,7 @@ namespace WinFormEasyTranslate
                                         });
 
                                     result.Add(
-                                        new ResXEntry()
+                                        new ResXRecord()
                                         {
                                             Id = string.Format("{0}.ColumnInfo.{1}.Font", grdControlName, colInfo.Name),
                                             Value = colInfo.Style == null ? fc.ConvertToInvariantString(grdData.Styles.Normal.Font) : fc.ConvertToInvariantString(colInfo.Style.Font),
@@ -119,7 +104,7 @@ namespace WinFormEasyTranslate
                                 foreach (CellStyle styleInfo in grdData.Styles)
                                 {
                                     result.Add(
-                                        new ResXEntry()
+                                        new ResXRecord()
                                         {
                                             Id = string.Format("{0}.StyleInfo.{1}.Font", grdControlName, styleInfo.Name),
                                             Value = fc.ConvertToInvariantString(styleInfo.Font),
@@ -131,7 +116,7 @@ namespace WinFormEasyTranslate
                             {
                                 nodevalue = node.GetValue((ITypeResolutionService)null) as string;
                                 result.Add(
-                                new ResXEntry()
+                                new ResXRecord()
                                 {
                                     Id = node.Name as string,
                                     Value = nodevalue,
@@ -157,75 +142,17 @@ namespace WinFormEasyTranslate
             }
         }
 
-        public static List<ResXDataNode> GetResourceNodes(string filename, Option options = Option.None)
-        {
-            var result = new List<ResXDataNode>();
-
-            using (var resx = new ResXResourceReader(filename))
-            {
-                FileInfo inputfile = new FileInfo(filename);
-                if (inputfile.Length == 0) return result;
-
-                resx.UseResXDataNodes = true;
-
-                //全てのワードを取得する
-                var dict = resx.GetEnumerator();
-                while (dict.MoveNext())
-                {
-                    var node = dict.Value as ResXDataNode;
-
-                    result.Add(node);
-                }
-
-                resx.Close();
-            }
-
-            return result;
-        }
-
-        public static C1FlexGrid GetDummyGrid(List<ResXDataNode> nodes, string grdControlName)
-        {
-            C1FlexGrid grdData = null;
-            if(nodes.Where(r => r.Name == grdControlName + ".ColumnInfo" ||
-                                r.Name == grdControlName + ".StyleInfo" ||
-                                r.Name == grdControlName + ".Font").Any())
-            {
-                grdData = new C1FlexGrid();
-
-                var fontWord = nodes.Where(r => r.Name == grdControlName + ".Font").FirstOrDefault();
-                if (fontWord != null)
-                {
-                    Font fontValue = fontWord.GetValue((ITypeResolutionService)null) as Font;
-                    grdData.Font = fontValue;
-                }
-
-                var columninfoWord = nodes.Where(r => r.Name == grdControlName + ".ColumnInfo").FirstOrDefault();
-                if(columninfoWord != null)
-                {
-                    grdData.ColumnInfo = columninfoWord.GetValue((ITypeResolutionService)null) as string;
-                }
-
-                var styleinfoWord = nodes.Where(r => r.Name == grdControlName + ".StyleInfo").FirstOrDefault();
-                if (styleinfoWord != null)
-                {
-                    grdData.StyleInfo = styleinfoWord.GetValue((ITypeResolutionService)null) as string;
-                }
-            }
-
-            return grdData;
-        }
-
         /// <summary>
         /// プロジェクトリソースからリソース項目を抽出する
         /// </summary>
         /// <param name="filename"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public static List<ResXEntry> ReadResource(string filename, Option options = Option.None)
+        public static List<ResXRecord> ReadResource(string filename)
         {
             try
             {
-                var result = new List<ResXEntry>();
+                var result = new List<ResXRecord>();
                 using (var resx = new ResXResourceReader(filename))
                 {
                     resx.UseResXDataNodes = true;
@@ -238,13 +165,13 @@ namespace WinFormEasyTranslate
                         {
                             nodevalue = node.GetValue((ITypeResolutionService)null) as string;
                         }
-                        catch(Exception)
+                        catch (Exception)
                         {
                             continue;
                         }
 
                         result.Add(
-                            new ResXEntry()
+                            new ResXRecord()
                             {
                                 Id = dict.Key as string,
                                 Value = nodevalue,
@@ -256,44 +183,21 @@ namespace WinFormEasyTranslate
 
                 return result;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 throw;
             }
         }
 
-        /// <summary>
-        /// リソースファイルの書く処理
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="entries"></param>
-        /// <param name="options"></param>
-        public static void Write(string filename, IEnumerable<ResXEntry> entries, Option options = Option.None)
-        {
-            using (var resx = new ResXResourceWriter(filename))
-            {
-                foreach (var entry in entries)
-                {
-                    var node = new ResXDataNode(entry.Id, entry.Value.Replace("\r", string.Empty).Replace("\n", Environment.NewLine));
+        #endregion
 
-                    if (!options.HasFlag(Option.SkipComments) && !string.IsNullOrWhiteSpace(entry.Comment))
-                    {
-                        node.Comment = entry.Comment.Replace("\r", string.Empty).Replace("\n", Environment.NewLine);
-                    }
-
-                    resx.AddResource(node);
-                }
-
-                resx.Close();
-            }
-        }
-
+        #region 書込み処理
         /// <summary>
         /// リソースファイルの書く処理
         /// </summary>
         /// <param name="filename"></param>
         /// <param name="node"></param>
-        public static void Write(string filename, ResXEntry node)
+        public static void WriteResource(string filename, ResXRecord node)
         {
             var resourceEntries = new Hashtable();
 
@@ -366,7 +270,7 @@ namespace WinFormEasyTranslate
         /// </summary>
         /// <param name="filename"></param>
         /// <param name="node"></param>
-        public static void WriteGridInfo(string filename, ResXEntry node)
+        public static void WriteGridInfo(string filename, ResXRecord node)
         {
             if (node.Id.Contains(".ColumnInfo"))
             {
@@ -389,7 +293,7 @@ namespace WinFormEasyTranslate
                 var fc = new FontConverter();
                 if (resourceEntries.ContainsKey(to_write))
                 {
-                    grdData.ColumnInfo = Convert.ToString(resourceEntries[to_write]);
+                    SetGridColumnInfoFixNoEditor(grdData, Convert.ToString(resourceEntries[to_write]));
                     string colName = node.Id.Split('.').ToList()[node.Id.Split('.').Count() - 2];
                     if (node.Id.EndsWith(".Caption"))
                         grdData.Cols[colName].Caption = node.Value;
@@ -412,7 +316,7 @@ namespace WinFormEasyTranslate
                     {
                         if (item.Key.ToString() == to_write)
                         {
-                            grdData.ColumnInfo = item.Value.ToString();
+                            SetGridColumnInfoFixNoEditor(grdData, item.Value.ToString());
                             resourceEntries.Add(item.Key.ToString(), grdData.ColumnInfo);
                             string colName = node.Id.Split('.').ToList()[node.Id.Split('.').Count() - 2];
                             if (node.Id.EndsWith(".Caption"))
@@ -448,7 +352,7 @@ namespace WinFormEasyTranslate
                 resourceWriter.Generate();
                 resourceWriter.Close();
             }
-            else if(node.Id.Contains(".StyleInfo"))
+            else if (node.Id.Contains(".StyleInfo"))
             {
                 string to_write = string.Format("{0}.StyleInfo", node.Id.Split('.').First());
                 var resourceEntries = new Hashtable();
@@ -512,62 +416,149 @@ namespace WinFormEasyTranslate
                 resourceWriter.Close();
             }
         }
+        #endregion
 
+        #region メソッド
         /// <summary>
-        /// Generates a public C# designer class.
+        /// 
         /// </summary>
-        /// <param name="resXFile">The source resx file.</param>
-        /// <param name="className">The base class name.</param>
-        /// <param name="namespaceName">The namespace for the generated code.</param>
-        /// <returns>false if generation of at least one property couldn't be generated.</returns>
-        public static bool GenerateDesignerFile(string resXFile, string className, string namespaceName)
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        public static List<ResXDataNode> GetResourceNodes(string filename)
         {
-            return GenerateDesignerFile(resXFile, className, namespaceName, false);
+            var result = new List<ResXDataNode>();
+
+            using (var resx = new ResXResourceReader(filename))
+            {
+                FileInfo inputfile = new FileInfo(filename);
+                if (inputfile.Length == 0) return result;
+
+                resx.UseResXDataNodes = true;
+
+                //全てのワードを取得する
+                var dict = resx.GetEnumerator();
+                while (dict.MoveNext())
+                {
+                    var node = dict.Value as ResXDataNode;
+
+                    result.Add(node);
+                }
+
+                resx.Close();
+            }
+
+            return result;
         }
 
         /// <summary>
-        /// Generates a C# designer class.
+        /// 文字列からグリッドにプロパティをセットする
         /// </summary>
-        /// <param name="resXFile">The source resx file.</param>
-        /// <param name="className">The base class name.</param>
-        /// <param name="namespaceName">The namespace for the generated code.</param>
-        /// <param name="internalClass">Specifies if the class has internal or public access level.</param>
-        /// <returns>false if generation of at least one property failed.</returns>
-        public static bool GenerateDesignerFile(string resXFile, string className, string namespaceName, bool internalClass)
+        /// <param name="nodes"></param>
+        /// <param name="grdControlName"></param>
+        /// <returns></returns>
+        public static C1FlexGrid GetDummyGrid(List<ResXDataNode> nodes, string grdControlName)
         {
-            if (!File.Exists(resXFile))
+            C1FlexGrid grdData = null;
+            if (nodes.Where(r => r.Name == grdControlName + ".ColumnInfo" ||
+                                 r.Name == grdControlName + ".StyleInfo" ||
+                                 r.Name == grdControlName + ".Font").Any())
             {
-                throw new FileNotFoundException($"The file '{resXFile}' could not be found");
+                grdData = new C1FlexGrid();
+
+                var fontWord = nodes.Where(r => r.Name == grdControlName + ".Font").FirstOrDefault();
+                if (fontWord != null)
+                {
+                    Font fontValue = fontWord.GetValue((ITypeResolutionService)null) as Font;
+                    grdData.Font = fontValue;
+                }
+
+                var columninfoWord = nodes.Where(r => r.Name == grdControlName + ".ColumnInfo").FirstOrDefault();
+                if (columninfoWord != null)
+                {
+                    string columnInfo = columninfoWord.GetValue((ITypeResolutionService)null) as string;
+                    SetGridColumnInfoFixNoEditor(grdData, columnInfo);
+                }
+
+                var styleinfoWord = nodes.Where(r => r.Name == grdControlName + ".StyleInfo").FirstOrDefault();
+                if (styleinfoWord != null)
+                {
+                    grdData.StyleInfo = styleinfoWord.GetValue((ITypeResolutionService)null) as string;
+                }
             }
 
-            if (string.IsNullOrEmpty(className))
-            {
-                throw new ArgumentException($"The class name must not be empty or null");
-            }
-
-            if (string.IsNullOrEmpty(namespaceName))
-            {
-                throw new ArgumentException($"The namespace name must not be empty or null");
-            }
-
-            string[] unmatchedElements;
-            var codeProvider = new Microsoft.CSharp.CSharpCodeProvider();
-            System.CodeDom.CodeCompileUnit code =
-                System.Resources.Tools.StronglyTypedResourceBuilder.Create(
-                    resXFile,
-                    className,
-                    namespaceName,
-                    codeProvider,
-                    internalClass,
-                    out unmatchedElements);
-
-            var designerFileName = Path.Combine(Path.GetDirectoryName(resXFile), $"{className}.Designer.cs");
-            using (StreamWriter writer = new StreamWriter(designerFileName, false, System.Text.Encoding.UTF8))
-            {
-                codeProvider.GenerateCodeFromCompileUnit(code, writer, new System.CodeDom.Compiler.CodeGeneratorOptions());
-            }
-
-            return unmatchedElements.Length == 0;
+            return grdData;
         }
+
+        /// <summary>
+        /// リソースファイルの書く処理
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="entries"></param>
+        /// <param name="options"></param>
+        public static void Write(string filename, IEnumerable<ResXRecord> entries)
+        {
+            using (var resx = new ResXResourceWriter(filename))
+            {
+                foreach (var entry in entries)
+                {
+                    var node = new ResXDataNode(entry.Id, entry.Value.Replace("\r", string.Empty).Replace("\n", Environment.NewLine));
+
+                    resx.AddResource(node);
+                }
+
+                resx.Close();
+            }
+        }
+
+        /// <summary>
+        /// Editorがある列にEditor消えるバグを修正するため、メソッドを作る
+        /// </summary>
+        /// <param name="grdData"></param>
+        /// <param name="columnInfo"></param>
+        private static void SetGridColumnInfoFixNoEditor(C1FlexGrid grdData, string columnInfo)
+        {
+            grdData.ColumnInfo = columnInfo;
+
+            Dictionary<string, string> EditorDic = GetEditorDic(columnInfo);
+
+            foreach (var colName in EditorDic.Keys)
+            {
+                grdData.Cols[colName].Editor = new System.Windows.Forms.Control() { Name = EditorDic[colName] };
+            }
+        }
+
+        /// <summary>
+        /// 全てのEditorを取得する
+        /// </summary>
+        /// <param name="columninfo"></param>
+        /// <returns></returns>
+        private static Dictionary<string, string> GetEditorDic(string columninfo)
+        {
+            Dictionary<string, string> editors = new Dictionary<string, string>();
+
+            List<string> colunmStrs = columninfo.Split(',').ToList()[6].Split('\t').ToList();
+
+            foreach (var columnStr in colunmStrs)
+            {
+                if (columnStr.Trim().Length == 0) continue;
+
+                List<string> ColProperties = Regex.Match(columnStr, @"\{(.*)\}", RegexOptions.Singleline).Groups[1].Value.Split(';').ToList();
+                string colName = ColProperties[0].Split(':').ToList()[1].Trim('"');
+                foreach (var Colproperty in ColProperties)
+                {
+                    string propertyName = Colproperty.Split(':').ToList()[0];
+                    if (propertyName == "Editor")
+                    {
+                        string propertyValue = Colproperty.Split(':').ToList()[1].Trim('"');
+                        editors.Add(colName, propertyValue);
+                    }
+                }
+            }
+
+
+            return editors;
+        }
+        #endregion
+
     }
 }

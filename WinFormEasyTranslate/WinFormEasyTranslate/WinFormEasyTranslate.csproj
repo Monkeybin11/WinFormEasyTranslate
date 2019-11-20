@@ -39,10 +39,10 @@
   <ItemGroup>
     <Reference Include="C1.Win.C1FlexGrid.4, Version=4.0.20172.271, Culture=neutral, PublicKeyToken=79882d576c6336da, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>Z:\00.PJ\SVN_JP\SFC_APS\C1.Win.C1FlexGrid.4.dll</HintPath>
+      <HintPath>C:\Users\mid0717\PYMAC_FMS_pvch27_ynslf_s07\SFC\C1.Win.C1FlexGrid.4.dll</HintPath>
     </Reference>
     <Reference Include="CSCOM">
-      <HintPath>Z:\00.PJ\SVN_JP\SFC_APS\CSCOM.dll</HintPath>
+      <HintPath>C:\Users\mid0717\PYMAC_FMS_pvch27_ynslf_s07\SFC\CSCOM.dll</HintPath>
     </Reference>
     <Reference Include="EPPlus, Version=4.5.3.1, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
       <HintPath>..\packages\EPPlus.4.5.3.1\lib\net40\EPPlus.dll</HintPath>
@@ -65,7 +65,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class\ResXEntry.cs" />
+    <Compile Include="Class\ResXRecord.cs" />
     <Compile Include="Class\ResXFile.cs" />
     <Compile Include="WinFormEasyTranslate.cs">
       <SubType>Form</SubType>
