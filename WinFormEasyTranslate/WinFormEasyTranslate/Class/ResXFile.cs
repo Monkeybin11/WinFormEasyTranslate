@@ -534,29 +534,46 @@ namespace WinFormEasyTranslate
         /// <returns></returns>
         private static Dictionary<string, string> GetEditorDic(string columninfo)
         {
-            Dictionary<string, string> editors = new Dictionary<string, string>();
-
-            List<string> colunmStrs = columninfo.Split(',').ToList()[6].Split('\t').ToList();
-
-            foreach (var columnStr in colunmStrs)
+            try
             {
-                if (columnStr.Trim().Length == 0) continue;
+                Dictionary<string, string> editors = new Dictionary<string, string>();
 
-                List<string> ColProperties = Regex.Match(columnStr, @"\{(.*)\}", RegexOptions.Singleline).Groups[1].Value.Split(';').ToList();
-                string colName = ColProperties[0].Split(':').ToList()[1].Trim('"');
-                foreach (var Colproperty in ColProperties)
+                List<string> colPropertyStrs = columninfo.Split(',').ToList();
+                string allPro = "";
+                for (int i = 0; i < colPropertyStrs.Count; i++)
                 {
-                    string propertyName = Colproperty.Split(':').ToList()[0];
-                    if (propertyName == "Editor")
+                    if (i >= 6)
                     {
-                        string propertyValue = Colproperty.Split(':').ToList()[1].Trim('"');
-                        editors.Add(colName, propertyValue);
+                        allPro += colPropertyStrs[i];
                     }
                 }
+
+                List<string> colunmStrs = allPro.Split('\t').ToList();
+
+                foreach (var columnStr in colunmStrs)
+                {
+                    if (columnStr.Trim().Length == 0) continue;
+
+                    List<string> ColProperties = Regex.Match(columnStr, @"\{(.*)\}", RegexOptions.Singleline).Groups[1].Value.Split(';').ToList();
+                    string colName = ColProperties[0].Split(':').ToList()[1].Trim('"');
+                    foreach (var Colproperty in ColProperties)
+                    {
+                        string propertyName = Colproperty.Split(':').ToList()[0];
+                        if (propertyName == "Editor")
+                        {
+                            string propertyValue = Colproperty.Split(':').ToList()[1].Trim('"');
+                            editors.Add(colName, propertyValue);
+                        }
+                    }
+                }
+
+
+                return editors;
             }
-
-
-            return editors;
+            catch(Exception ex)
+            {
+                throw;
+            }
         }
         #endregion
 
