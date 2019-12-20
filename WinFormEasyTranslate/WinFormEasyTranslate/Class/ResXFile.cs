@@ -555,7 +555,8 @@ namespace WinFormEasyTranslate
                     if (columnStr.Trim().Length == 0) continue;
 
                     List<string> ColProperties = Regex.Match(columnStr, @"\{(.*)\}", RegexOptions.Singleline).Groups[1].Value.Split(';').ToList();
-                    string colName = ColProperties[0].Split(':').ToList()[1].Trim('"');
+                    if (!ColProperties.Any(r => r.Trim().Length != 0)) continue;
+                    string colName = ColProperties.Where(r => r.Split(':').ToList()[0] == "Name").Select(r => r.Split(':').ToList()[1]).FirstOrDefault().Trim('"');
                     foreach (var Colproperty in ColProperties)
                     {
                         string propertyName = Colproperty.Split(':').ToList()[0];
