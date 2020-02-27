@@ -1003,16 +1003,16 @@ namespace WinFormEasyTranslate
                 {
                     DataTable dt = new DataTable();
 
-                    Stream stream = new FileStream(filePath, FileMode.Open);
-                    using (stream)
+                    using (ExcelPackage pack = new ExcelPackage(new FileInfo(filePath)))
                     {
-                        ExcelPackage package = new ExcelPackage(stream);
-                        ExcelWorksheet sheet = package.Workbook.Worksheets[2];
+                        ExcelWorksheet sheet = pack.Workbook.Worksheets[2];
                         int startRowIndx = sheet.Dimension.Start.Row + (isSkipFirstRow ? 1 : 0);
 
                         for (int col = 1; col <= sheet.Dimension.End.Column; col++)
                         {
-                            dt.Columns.Add(sheet.Cells[1, col].Value.ToString(), Type.GetType("System.String"));
+                            string colName = Convert.ToString(sheet.Cells[1, col].Value);
+                            if (string.IsNullOrEmpty(colName)) colName = string.Format("blank_col{0}", col);
+                            dt.Columns.Add(colName, Type.GetType("System.String"));
                         }
 
                         for (int r = startRowIndx; r <= sheet.Dimension.End.Row; r++)
@@ -1034,7 +1034,7 @@ namespace WinFormEasyTranslate
                     }
                     return dt;
                 }
-                catch (Exception )
+                catch (Exception ex)
                 {
                 }
             }
